@@ -126,3 +126,13 @@ This project is licensed under the MIT License - see [LICENSE.md](LICENSE.md)
 3. Penrose, R. (1994). Shadows of the Mind: A Search for the Missing Science of Consciousness.
 4. Amari, S. I. (2016). Information geometry and its applications.
 5. Baez, J. C., & Stay, M. (2011). Physics, topology, logic and computation.
+6. Russell, W. (1926). The Universal One.
+7. Sakurai, J. J., & Napolitano, J. (2017). Modern Quantum Mechanics.
+8. Connes, A. (1994). Noncommutative Geometry.
+9. Tononi, G. (2008). Consciousness as integrated information.
+10. Wheeler, J. A. (1990). Information, physics, quantum: The search for links.
+11. Deutsch, D. (1985). Quantum theory, the Church-Turing principle and the universal quantum computer.
+12. von Neumann, J. (1955). Mathematical Foundations of Quantum Mechanics.
+13. Bohm, D. (1980). Wholeness and the Implicate Order.
+14. Hameroff, S., & Penrose, R. (2014). Consciousness in the universe: A review of the 'Orch OR' theory.
+15. Zurek, W. H. (2003). Decoherence, einselection, and the quantum origins of the classical.
