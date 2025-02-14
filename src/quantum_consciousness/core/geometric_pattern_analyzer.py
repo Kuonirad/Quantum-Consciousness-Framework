@@ -4,7 +4,7 @@ Geometric pattern analyzer for crystallographic pattern quantification.
 
 import numpy as np
 from typing import Dict, List, Tuple, Optional
-from scipy import signal, stats
+from scipy import signal, stats, ndimage
 from dataclasses import dataclass
 
 @dataclass
@@ -42,7 +42,7 @@ class GeometricPatternAnalyzer:
         center = pattern.shape[0] // 2
         
         for angle in range(30, 360, 30):
-            rotated = signal.rotate(pattern, angle)
+            rotated = ndimage.rotate(pattern, angle, reshape=False)
             similarity = np.corrcoef(
                 pattern.flatten(),
                 rotated.flatten()
@@ -52,14 +52,14 @@ class GeometricPatternAnalyzer:
         # Compute reflection symmetry
         ref_scores = []
         for axis in range(0, 180, 45):
-            reflected = signal.rotate(np.fliplr(pattern), axis)
+            reflected = ndimage.rotate(np.fliplr(pattern), axis, reshape=False)
             similarity = np.corrcoef(
                 pattern.flatten(),
                 reflected.flatten()
             )[0,1]
             ref_scores.append(abs(similarity))
             
-        return np.mean(rot_scores + ref_scores)
+        return float(np.mean(rot_scores + ref_scores))
         
     def compute_fractal_dimension(self, pattern: np.ndarray) -> float:
         """
@@ -140,10 +140,10 @@ class GeometricPatternAnalyzer:
             PatternMetrics object with analysis results
         """
         # Ensure pattern is properly sized
-        pattern = signal.resample(
+        pattern = np.array(signal.resample(
             signal.resample(pattern, self.resolution, axis=0),
             self.resolution, axis=1
-        )
+        ))
         
         # Compute metrics
         symmetry = self.compute_symmetry_score(pattern)
@@ -157,7 +157,7 @@ class GeometricPatternAnalyzer:
             symmetry_score=symmetry,
             complexity=complexity,
             fractal_dimension=fractal_dim,
-            correlation_strength=correlation
+            correlation_strength=float(correlation)
         )
         
     def compare_patterns(self, 
