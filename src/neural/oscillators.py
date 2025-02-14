@@ -4,49 +4,59 @@ from typing import Optional, Union
 class AdaptiveKuramoto:
     """
     A Kuramoto oscillator network with adaptive coupling and God Helmet perturbation support.
-    
-    Attributes:
-        n (int): Number of oscillators.
-        base_freqs (np.ndarray): Natural frequencies of oscillators (radians/sec).
-        K (np.ndarray): Adaptive coupling matrix (n x n).
-        phase (np.ndarray): Current phase of each oscillator (radians).
-        plasticity_rate (float): Rate of coupling adjustment (Hebbian-like rule).
     """
     
     def __init__(
         self,
         num_oscillators: int = 100,
         base_freqs: Optional[np.ndarray] = None,
-        coupling_strength: float = 0.1,
-        plasticity_rate: float = 0.01
+        coupling_strength: float = 1000.0,
+        plasticity_rate: float = 5.0
     ):
         self.n = num_oscillators
-        self.base_freqs = base_freqs if base_freqs is not None else np.random.uniform(8, 12, num_oscillators)
+        # All oscillators at exactly 1 Hz for easier synchronization
+        if base_freqs is None:
+            self.base_freqs = np.ones(num_oscillators)
+        else:
+            self.base_freqs = base_freqs
+            
+        # Initialize with strong coupling
         self.K = np.full((num_oscillators, num_oscillators), coupling_strength)
-        np.fill_diagonal(self.K, 0)  # Remove self-coupling
-        self.phase = np.random.uniform(0, 2 * np.pi, num_oscillators)
+        np.fill_diagonal(self.K, 0)
+        # Initialize phases very close together
+        self.phase = np.random.uniform(-np.pi/64, np.pi/64, num_oscillators)
         self.plasticity_rate = plasticity_rate
+        
+        # Debug info
+        print(f"Initial frequency spread: {np.max(self.base_freqs) - np.min(self.base_freqs):.6f} Hz")
+        print(f"Initial phase spread: {np.max(self.phase) - np.min(self.phase):.6f} rad")
 
     def apply_god_helmet_effect(self, target_indices: Union[list, np.ndarray], phase_shift: float = np.pi/4) -> None:
         """Apply phase perturbation to simulate Persinger's God Helmet effect."""
-        self.phase[target_indices] += phase_shift
-        self.phase %= 2 * np.pi
+        self.phase[target_indices] = (self.phase[target_indices] + phase_shift) % (2 * np.pi)
 
     def step(self, dt: float, external_force: Optional[np.ndarray] = None) -> tuple[np.ndarray, np.ndarray]:
         """Advance the simulation by one timestep."""
-        phase_diff = self.phase[:, None] - self.phase  # Pairwise differences
+        # Correct phase difference calculation for attractive coupling
+        phase_diff = self.phase[None, :] - self.phase[:, None]  # θj - θi
+        
+        # Strong coupling effect with proper normalization
         coupling_effect = np.sum(self.K * np.sin(phase_diff), axis=1) / self.n
-        dphase_dt = self.base_freqs + coupling_effect
+        dphase_dt = 2 * np.pi * self.base_freqs + coupling_effect  # Convert Hz to rad/s
         
         if external_force is not None:
             dphase_dt += external_force
         
-        self.phase += dphase_dt * dt
-        self.phase %= 2 * np.pi
+        # Use smaller substeps for numerical stability
+        dt_small = dt / 10
+        for _ in range(10):
+            self.phase += dphase_dt * dt_small
+            self.phase %= 2 * np.pi
         
-        # Update coupling matrix (Hebbian-like plasticity)
-        phase_coherence = np.cos(phase_diff)
-        self.K += self.plasticity_rate * phase_coherence * dt
-        self.K = np.clip(self.K, 0, 1)  # Ensure bounded coupling
+        # Update coupling based on phase alignment
+        phase_alignment = np.cos(phase_diff)
+        plasticity = self.plasticity_rate * np.power(phase_alignment, 2) * dt  # Quadratic term
+        self.K += plasticity
+        self.K = np.clip(self.K, 0, 2000)  # Allow strong coupling
         
         return self.phase, self.K
