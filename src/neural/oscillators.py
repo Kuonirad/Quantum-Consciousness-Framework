@@ -36,7 +36,14 @@ class AdaptiveKuramoto:
         self.phase[target_indices] = (self.phase[target_indices] + phase_shift) % (2 * np.pi)
 
     def step(self, dt: float, external_force: Optional[np.ndarray] = None) -> tuple[np.ndarray, np.ndarray]:
-        """Advance the simulation by one timestep."""
+        """Advance the simulation by one timestep.
+
+        Returns
+        -------
+        tuple[np.ndarray, np.ndarray]
+            ``phase`` is the array of oscillator phases after the update and
+            ``coupling_matrix`` is the current adaptive coupling matrix.
+        """
         # Correct phase difference calculation for attractive coupling
         phase_diff = self.phase[None, :] - self.phase[:, None]  # θj - θi
         
