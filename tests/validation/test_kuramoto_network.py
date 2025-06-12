@@ -4,7 +4,9 @@ Validation tests for Kuramoto oscillator network implementation.
 
 import numpy as np
 import pytest
-import torch
+
+# Skip tests if PyTorch is not available
+torch = pytest.importorskip("torch")
 from src.quantum_consciousness.core.kuramoto_network import (
     KuramotoNetwork, LoihiInterface
 )
