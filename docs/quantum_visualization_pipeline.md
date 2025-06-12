@@ -198,7 +198,7 @@ class AdaptiveRenderer:
     """Adaptive resolution quantum rendering.
 
     Methods:
-        - Dynamic LOD
+        - Dynamic LOD (Level of Detail)
         - Importance sampling
         - Resolution scaling
 
