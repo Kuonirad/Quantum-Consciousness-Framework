@@ -29,7 +29,7 @@ pyparsing==3.2.0
 pytest==8.3.3
 python-dateutil==2.9.0.post0
 qutip==5.0.4
-requests==2.32.3
+requests==2.32.4
 rustworkx==0.15.1
 scipy==1.14.1
 six==1.16.0
