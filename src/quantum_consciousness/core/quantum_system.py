@@ -8,6 +8,7 @@ from typing import Optional, Tuple, List, Union
 import qutip as qt
 import pennylane as qml
 from scipy.linalg import logm, sqrtm
+from .quantum_shannon_theory import QuantumShannonTheory
 
 class QuantumSystem:
     """Implements a 10-qubit quantum system with consciousness measures."""
@@ -363,3 +364,49 @@ class QuantumSystem:
         phase *= overlap / np.abs(overlap)
 
         return phase
+
+    # ------------------------------------------------------------------
+    # Information-theoretic helper methods used by visualization tools
+    # ------------------------------------------------------------------
+
+    def _partial_trace(self, rho: np.ndarray, keep: List[int]) -> np.ndarray:
+        """Partial trace over qubits not in ``keep``."""
+        if rho.shape != (self.dim, self.dim):
+            raise ValueError("Density matrix has wrong dimension")
+
+        if any(k >= self.n_qubits or k < 0 for k in keep):
+            raise ValueError("Index out of range")
+
+        keep_set = set(keep)
+        trace_out = sorted(set(range(self.n_qubits)) - keep_set)
+
+        dims = [2] * self.n_qubits
+        tensor = rho.reshape(dims + dims)
+
+        for idx in reversed(trace_out):
+            tensor = np.trace(tensor, axis1=idx, axis2=idx + self.n_qubits)
+
+        dim_keep = 2 ** len(keep)
+        return tensor.reshape((dim_keep, dim_keep))
+
+    def get_reduced_density_matrix(self, qubits: List[int]) -> np.ndarray:
+        """Return the reduced state for the specified qubits."""
+        return self._partial_trace(self.rho, qubits)
+
+    def get_entropy(self, qubits: Optional[List[int]] = None) -> float:
+        """Return the von Neumann entropy of the given subsystem."""
+        if qubits is None:
+            rho = self.rho
+            dim = self.dim
+        else:
+            rho = self.get_reduced_density_matrix(qubits)
+            dim = 2 ** len(qubits)
+
+        qst = QuantumShannonTheory(dim)
+        return float(qst.von_neumann_entropy(rho))
+
+    def get_mutual_information(self, i: int, j: int) -> float:
+        """Return the quantum mutual information between qubits ``i`` and ``j``."""
+        rho_ij = self.get_reduced_density_matrix([i, j])
+        qst = QuantumShannonTheory(4)
+        return float(qst.quantum_mutual_information(rho_ij))
