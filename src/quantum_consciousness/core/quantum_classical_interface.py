@@ -46,6 +46,7 @@ class QuantumClassicalInterface:
         # Project state
         eigenvals, eigenvecs = np.linalg.eigh(observable)
         probabilities = np.abs(eigenvecs.conj().T @ quantum_state)**2
+        probabilities = probabilities / probabilities.sum()
 
         # Choose eigenstate based on probabilities
         outcome = np.random.choice(len(eigenvals), p=probabilities)
