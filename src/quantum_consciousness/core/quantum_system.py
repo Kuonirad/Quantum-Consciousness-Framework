@@ -39,7 +39,7 @@ class QuantumSystem:
         Returns:
             numpy.ndarray: Initial quantum state vector
         """
-        psi = np.ones(self.dim) / np.sqrt(self.dim)
+        psi = np.ones(self.dim, dtype=complex) / np.sqrt(self.dim)
         return psi
 
     def _density_matrix(self) -> np.ndarray:
@@ -166,6 +166,14 @@ class QuantumSystem:
 
             # Update density matrix
             rho += dt * (-1j/hbar * commutator + lindblad)
+
+            # Enforce Hermiticity and positivity
+            rho = (rho + rho.conj().T) / 2
+            eigvals, eigvecs = np.linalg.eigh(rho)
+            eigvals = np.clip(eigvals, 0, None)
+            rho = eigvecs @ np.diag(eigvals) @ eigvecs.conj().T
+            rho = rho / np.trace(rho)
+
             evolution.append(rho.copy())
 
         return evolution
@@ -254,20 +262,18 @@ class QuantumSystem:
         attention = attention / np.linalg.norm(attention)
         memory = memory / np.linalg.norm(memory)
 
-        # Compute perception-attention coupling using proper reshaping
-        pa_coupling = np.kron(perception.reshape(-1, 1), attention.reshape(-1, 1)).flatten()
-        pa_coupling = pa_coupling / np.linalg.norm(pa_coupling)
+        # Combine perception, attention and memory
+        result = perception + attention + memory
 
-        # Apply quantum phase factor with proper inner product
-        phase = np.exp(1j * beta * omega * np.vdot(pa_coupling[:self.dim], memory))
+        # Apply global phase factor
+        phase = np.exp(1j * beta * omega)
+        result = phase * result
 
-        # Compute cognitive integration with dimension matching
-        result = phase * np.dot(pa_coupling[:self.dim], memory)
-
-        # Ensure normalization and numerical stability
-        result = result / (np.abs(result) + self.epsilon)
-
-        return result
+        # Normalize and ensure numerical stability
+        norm = np.linalg.norm(result)
+        if norm < self.epsilon:
+            return np.zeros_like(result)
+        return result / norm
 
     def compute_cognitive_fidelity(self, state_a: np.ndarray, state_b: np.ndarray) -> float:
         """

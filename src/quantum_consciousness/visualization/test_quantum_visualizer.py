@@ -7,7 +7,9 @@ Ensures visualization components work correctly with quantum systems.
 
 import numpy as np
 import pytest
-import torch
+
+# Skip tests if PyTorch is not available
+torch = pytest.importorskip("torch")
 from ..core.quantum_system import QuantumSystem
 from .quantum_visualizer import QuantumVisualizer
 from .quantum_gl_visualizer import QuantumGLVisualizer

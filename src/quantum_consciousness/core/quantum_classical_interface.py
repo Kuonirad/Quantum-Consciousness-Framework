@@ -35,12 +35,17 @@ class QuantumClassicalInterface:
         Returns:
             Tuple[float, np.ndarray]: Expectation value and post-measurement state
         """
+        if quantum_state.shape[0] != self.quantum_dim:
+            raise ValueError("Quantum state dimension mismatch")
+        if observable.shape != (self.quantum_dim, self.quantum_dim):
+            raise ValueError("Observable dimension mismatch")
+
         # Calculate expectation value
         expectation = np.real(np.vdot(quantum_state, observable @ quantum_state))
 
         # Project state
         eigenvals, eigenvecs = np.linalg.eigh(observable)
-        probabilities = np.abs(np.vdot(eigenvecs.T, quantum_state))**2
+        probabilities = np.abs(eigenvecs.conj().T @ quantum_state)**2
 
         # Choose eigenstate based on probabilities
         outcome = np.random.choice(len(eigenvals), p=probabilities)
@@ -61,6 +66,9 @@ class QuantumClassicalInterface:
         Returns:
             numpy.ndarray: Updated classical state
         """
+        if classical_state.shape[0] != self.classical_dim:
+            raise ValueError("Classical state dimension mismatch")
+
         # Create feedback matrix
         F = np.eye(self.classical_dim) + measurement * np.random.randn(
             self.classical_dim, self.classical_dim)
@@ -183,6 +191,11 @@ class QuantumClassicalInterface:
         Returns:
             numpy.ndarray: Classical representation
         """
+        if quantum_state.shape[0] != self.quantum_dim:
+            raise ValueError("Quantum state dimension mismatch")
+        if np.linalg.norm(quantum_state) < self.epsilon:
+            raise ValueError("Quantum state has zero norm")
+
         # Calculate probabilities
         probs = np.abs(quantum_state)**2
 
@@ -204,6 +217,11 @@ class QuantumClassicalInterface:
         Returns:
             numpy.ndarray: Quantum representation
         """
+        if classical_state.shape[0] != self.classical_dim:
+            raise ValueError("Classical state dimension mismatch")
+        if np.linalg.norm(classical_state) < self.epsilon:
+            raise ValueError("Classical state has zero norm")
+
         # Create quantum state with amplitudes from classical state
         quantum_rep = np.zeros(self.quantum_dim, dtype=complex)
         for i in range(min(len(classical_state), self.quantum_dim)):
