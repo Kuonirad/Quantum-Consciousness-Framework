@@ -11,6 +11,7 @@ License: MIT
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import animation
 from typing import Optional, Union, Tuple, List
 from mpl_toolkits.mplot3d import Axes3D
 import plotly.graph_objects as go
@@ -129,7 +130,7 @@ class QuantumVisualizer:
         return ax
 
     def animate_evolution(self, states: List[np.ndarray],
-                         interval: int = 50) -> plt.animation.FuncAnimation:
+                         interval: int = 50) -> animation.FuncAnimation:
         """
         Animate quantum state evolution.
 
@@ -140,14 +141,15 @@ class QuantumVisualizer:
         Returns:
             matplotlib.animation.FuncAnimation: Animation object
         """
-        fig, ax = plt.subplots(figsize=(10, 6))
+        fig = plt.figure(figsize=(10, 6))
+        ax = fig.add_subplot(111, projection='3d')
 
         def update(frame):
             ax.clear()
             self.plot_state_vector(states[frame], ax)
 
-        anim = plt.animation.FuncAnimation(fig, update, frames=len(states),
-                                         interval=interval, blit=False)
+        anim = animation.FuncAnimation(fig, update, frames=len(states),
+                                       interval=interval, blit=False)
         return anim
 
     def plot_entanglement_graph(self, system: QuantumSystem) -> go.Figure:
@@ -167,13 +169,14 @@ class QuantumVisualizer:
         mutual_info_matrix = np.zeros((n_qubits, n_qubits))
 
         for i in range(n_qubits):
+            # Local (single qubit) entropy
+            entanglement_matrix[i, i] = system.get_entropy([i])
+
             for j in range(i+1, n_qubits):
-                # Compute reduced density matrix and entropy
-                rho_ij = system.get_reduced_density_matrix([i, j])
-                entanglement_matrix[i,j] = system.get_entropy()
-                mutual_info_matrix[i,j] = system.get_mutual_information(i, j)
-                entanglement_matrix[j,i] = entanglement_matrix[i,j]
-                mutual_info_matrix[j,i] = mutual_info_matrix[i,j]
+                entanglement_matrix[i, j] = system.get_entropy([i, j])
+                entanglement_matrix[j, i] = entanglement_matrix[i, j]
+                mutual_info_matrix[i, j] = system.get_mutual_information(i, j)
+                mutual_info_matrix[j, i] = mutual_info_matrix[i, j]
 
         # Use t-SNE for optimal layout
         positions = TSNE(n_components=2).fit_transform(entanglement_matrix)
