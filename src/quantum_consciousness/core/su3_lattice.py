@@ -102,8 +102,8 @@ class SU3LatticeQCD:
                         
                         # Apply gauge transformation
                         self.gauge_field[i,j,k,mu] = (
-                            G @ self.gauge_field[i,j,k,mu] @ 
-                            G[ni,nj,nk].conj().T
+                            G @ self.gauge_field[i,j,k,mu] @
+                            G.conj().T
                         )
                         
     def compute_wilson_loop(self, size: Tuple[int, int]) -> complex:
