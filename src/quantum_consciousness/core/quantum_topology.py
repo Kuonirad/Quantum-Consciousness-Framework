@@ -5,7 +5,7 @@ Implements cobordism maps, quantum homology, and topological invariants.
 
 import numpy as np
 from typing import List, Tuple, Dict, Optional
-from scipy.linalg import expm
+from scipy.linalg import expm, null_space
 import networkx as nx
 import qutip as qt
 
@@ -79,16 +79,18 @@ class QuantumTopology:
         Returns:
             numpy.ndarray: Cobordism map
         """
-        # Calculate dimension of cobordism
-        dim_cobordism = len(initial_manifold) + len(final_manifold)
+        dim_init = len(initial_manifold)
+        dim_final = len(final_manifold)
 
-        # Create cobordism matrix
-        cobordism = np.zeros((dim_cobordism, dim_cobordism), dtype=complex)
+        # The cobordism should map the initial manifold to the final one, so the
+        # matrix has shape ``(dim_final, dim_init)``.  This allows it to act on
+        # a vector of length ``dim_init`` and produce a vector of length
+        # ``dim_final``.
+        cobordism = np.zeros((dim_final, dim_init), dtype=complex)
 
-        # Implement gluing map
-        for i in range(len(initial_manifold)):
-            for j in range(len(final_manifold)):
-                cobordism[i,j] = np.vdot(initial_manifold[i], final_manifold[j])
+        for i in range(dim_final):
+            for j in range(dim_init):
+                cobordism[i, j] = np.vdot(final_manifold[i], initial_manifold[j])
 
         return cobordism
 
@@ -107,7 +109,7 @@ class QuantumTopology:
 
         for n in range(len(quantum_complex) - 1):
             # Calculate kernel of boundary map n
-            kernel_n = np.linalg.null_space(quantum_complex[n])
+            kernel_n = null_space(quantum_complex[n])
 
             # Calculate image of boundary map n+1
             image_n_plus_1 = quantum_complex[n+1]
@@ -310,13 +312,24 @@ class QuantumTopology:
         return state / np.linalg.norm(state)
 
     def _partial_trace(self, rho: np.ndarray, keep: List[int]) -> np.ndarray:
-        """Return the submatrix corresponding to ``keep`` indices."""
+        """Compute a proper partial trace over the qubits *not* in ``keep``."""
         if rho.shape != (self.dim, self.dim):
             raise ValueError("Density matrix has wrong dimension")
-        if any(k >= self.dim for k in keep):
+
+        if any(k >= self.n_qubits or k < 0 for k in keep):
             raise ValueError("Index out of range")
 
-        return rho[np.ix_(keep, keep)]
+        keep_set = set(keep)
+        trace_out = sorted(set(range(self.n_qubits)) - keep_set)
+
+        dims = [2] * self.n_qubits
+        tensor = rho.reshape(dims + dims)
+
+        for idx in reversed(trace_out):
+            tensor = np.trace(tensor, axis1=idx, axis2=idx + self.n_qubits)
+
+        dim_keep = 2 ** len(keep)
+        return tensor.reshape((dim_keep, dim_keep))
 
     def compute_topological_entropy(self, state: np.ndarray, partition: List[int]) -> float:
         """Compute a very small topological entropy using a partial trace."""
@@ -345,7 +358,7 @@ class QuantumTopology:
 
         for n in range(len(quantum_complex) - 1):
             # Calculate kernel of coboundary map
-            kernel = np.linalg.null_space(quantum_complex[n].T)
+            kernel = null_space(quantum_complex[n].T)
 
             # Calculate image of previous coboundary map
             if n > 0:
@@ -380,7 +393,7 @@ class QuantumTopology:
                         d_r = filtration[r][p+r] @ filtration[r][q]
 
                         # Calculate cohomology of d_r
-                        kernel = np.linalg.null_space(d_r)
+                        kernel = null_space(d_r)
                         image = d_r @ filtration[r][p+q]
 
                         # Store result in spectral sequence

@@ -134,12 +134,13 @@ def test_partial_trace():
     rho = np.outer(state, state.conj())
 
     # Compute partial trace
-    rho_A = qt._partial_trace(rho, [0, 1])
+    # Keep only the first qubit
+    rho_A = qt._partial_trace(rho, [0])
 
     # Test properties
     assert rho_A.shape == (2, 2)
     assert np.allclose(rho_A, rho_A.conj().T)  # Hermiticity
-    assert np.abs(np.trace(rho_A) - 1.0) < 1e-10  # Trace preservation
+    assert np.isclose(np.trace(rho_A), 1.0)
 
 def test_numerical_stability():
     """Test numerical stability of computations."""

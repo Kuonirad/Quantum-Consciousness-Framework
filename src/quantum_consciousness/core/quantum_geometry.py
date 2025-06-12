@@ -62,8 +62,7 @@ class QuantumGeometry:
     def quantum_cup_product(self, perception: np.ndarray, attention: np.ndarray,
                           memory: np.ndarray, beta: float) -> np.ndarray:
         """
-        Implement quantum cup product for cognitive architectures
-        a ∗_q b ≈ (Perception ∪ Attention)β q^{⟨β,ω⟩} (Memory)
+        Implement a simple quantum cup product used by ``QuantumSystem``.
 
         Args:
             perception: Quantum state representing perception
@@ -74,14 +73,16 @@ class QuantumGeometry:
         Returns:
             numpy.ndarray: Resulting quantum state
         """
-        # Calculate union of perception and attention
-        combined_state = np.kron(perception, attention)
+        perception = perception / np.linalg.norm(perception)
+        attention = attention / np.linalg.norm(attention)
+        memory = memory / np.linalg.norm(memory)
 
-        # Apply coupling with memory
-        omega = np.vdot(combined_state, memory)
-        coupling_factor = np.exp(beta * omega)
+        result = perception + attention + memory
+        phase = np.exp(1j * beta)
 
-        return coupling_factor * (combined_state @ memory)
+        result = phase * result
+        norm = np.linalg.norm(result)
+        return np.zeros_like(result) if norm == 0 else result / norm
 
     def tqft_boundary_map(self, initial_state: np.ndarray,
                          cobordism: np.ndarray) -> np.ndarray:
